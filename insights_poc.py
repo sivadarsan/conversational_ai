@@ -39,18 +39,27 @@ suggestions = [
     "What are the top item categories added to cart?"
 ]
 
-user_question = st.selectbox("💬 Ask your question or pick a suggestion:", suggestions, index=0)
 
-if user_question == "Type your own question here...":
-    user_question = st.text_input("✍️ Your custom question")
+
+if "user_question" not in st.session_state:
+    st.session_state.user_question = ""
+
+# Dropdown suggestions
+# If a suggestion is picked and input is empty or different, update it
+if selected_suggestion and st.session_state.user_question != selected_suggestion:
+    st.session_state.user_question = selected_suggestion
+
+# Single editable input field
+user_question = st.text_input("💬 Ask your question:", value=st.session_state.user_question, key="user_question")
 
 # === Run on Button Click ===
-if st.button("Ask AI"):
-    try:
-        # Get schema from one actual table
-        sample_table = f"{PUBLIC_PROJECT}.{DATASET}.events_20210101"
-        schema = client.get_table(sample_table).schema
-        schema_str = ", ".join([f"{f.name} ({f.field_type})" for f in schema])
+# Button to ask AI
+if st.button("🚀 Ask AI"):
+    final_question = st.session_state.user_question.strip()
+    if not final_question:
+        st.warning("Please enter or select a question to proceed.")
+    else:
+        st.success(f"Processing: {final_question}")
 
         # Prompt Gemini to generate SQL
         with st.spinner("🧠 Generating SQL..."):
