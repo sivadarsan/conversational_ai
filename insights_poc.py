@@ -87,19 +87,19 @@ Important:
         sql_clean = re.sub(r"^```sql|```$", "", sql_only).strip()
 
         # Run SQL
-        with st.spinner("📡 Querying BigQuery..."):
-            df = client.query(sql_clean).to_dataframe()
-            st.dataframe(df)
+            with st.spinner("📡 Querying BigQuery..."):
+                df = client.query(sql_clean).to_dataframe()
+                st.dataframe(df)
 
         # Get Insights
-        with st.spinner("📊 Generating insights..."):
-            insight_prompt = f"Give a brief summary and insight on this table:\n{df.head(10).to_csv(index=False)}"
-            insight = model.generate_content(insight_prompt)
-            st.markdown("### 📌 AI-Powered Insights")
-            st.markdown(insight.text)
+            with st.spinner("📊 Generating insights..."):
+                insight_prompt = f"Give a brief summary and insight on this table:\n{df.head(10).to_csv(index=False)}"
+                insight = model.generate_content(insight_prompt)
+                st.markdown("### 📌 AI-Powered Insights")
+                st.markdown(insight.text)
         
-        with st.spinner("📈 Generating chart..."):
-            chart_prompt = f"""
+            with st.spinner("📈 Generating chart..."):
+                chart_prompt = f"""
 You are a Streamlit expert. Based on the following table, generate Python code to render the most suitable chart using Streamlit (preferably with Altair or st.bar_chart).
 
 Requirements:
