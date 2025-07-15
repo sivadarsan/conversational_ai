@@ -55,18 +55,20 @@ user_question = st.text_input("💬 Ask your question:", value=st.session_state.
 # === Run on Button Click ===
 # Button to ask AI
 if st.button("🚀 Ask AI"):
-    final_question = st.session_state.user_question.strip()
-    if not final_question:
-        st.warning("Please enter or select a question to proceed.")
-    else:
-        st.success(f"Processing: {final_question}")
+    try:
+        
+        final_question = st.session_state.user_question.strip()
+        if not final_question:
+            st.warning("Please enter or select a question to proceed.")
+        else:
+            st.success(f"Processing: {final_question}")
 
         # Prompt Gemini to generate SQL
-        with st.spinner("🧠 Generating SQL..."):
+            with st.spinner("🧠 Generating SQL..."):
             prompt = f"""
 You are a data analyst. Generate a BigQuery SQL query for the following question:
 
-Question: {user_question}
+Question: {final_question}
 
 Dataset: {TABLE_PATTERN}
 Schema: {schema_str}
