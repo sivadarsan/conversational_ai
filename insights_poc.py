@@ -24,7 +24,13 @@ PUBLIC_PROJECT = "bigquery-public-data"
 DATASET = "ga4_obfuscated_sample_ecommerce"
 TABLE_PATTERN = f"{PUBLIC_PROJECT}.{DATASET}.events_*"
 
-# === UI ===
+# === SCHEMA FETCH ===
+# Get schema from one of the sharded tables (e.g., events_20210101)
+sample_table = f"{PUBLIC_PROJECT}.{DATASET}.events_20210101"
+table = client.get_table(sample_table)
+schema_str = "\n".join([f"{field.name}: {field.field_type}" for field in table.schema])
+
+
 # === UI CONFIG ===
 st.set_page_config(page_title="Chat with your Data", layout="wide")
 st.title("Chat with your data - Your Conversational Analytics Assistant")
