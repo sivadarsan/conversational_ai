@@ -25,9 +25,9 @@ DATASET = "ga4_obfuscated_sample_ecommerce"
 TABLE_PATTERN = f"{PUBLIC_PROJECT}.{DATASET}.events_*"
 
 # === UI ===
+# === UI CONFIG ===
 st.set_page_config(page_title="Chat with your Data", layout="wide")
 st.title("Chat with your data - Your Conversational Analytics Assistant")
-
 st.markdown("Ask questions about Google Analytics 4 ecommerce events data from the public dataset.")
 
 suggestions = [
@@ -39,33 +39,30 @@ suggestions = [
     "What are the top item categories added to cart?"
 ]
 
-
-
+# Session state to hold current question
 if "user_question" not in st.session_state:
     st.session_state.user_question = ""
 
-# Dropdown suggestions
-# If a suggestion is picked and input is empty or different, update it
+# Dropdown suggestion box
+selected_suggestion = st.selectbox("💡 Pick a suggestion (optional):", suggestions)
 if selected_suggestion and st.session_state.user_question != selected_suggestion:
     st.session_state.user_question = selected_suggestion
 
-# Single editable input field
+# Editable text input
 user_question = st.text_input("💬 Ask your question:", value=st.session_state.user_question, key="user_question")
 
 # === Run on Button Click ===
-# Button to ask AI
 if st.button("🚀 Ask AI"):
     try:
-        
         final_question = st.session_state.user_question.strip()
         if not final_question:
             st.warning("Please enter or select a question to proceed.")
         else:
             st.success(f"Processing: {final_question}")
 
-        # Prompt Gemini to generate SQL
+            # Generate SQL with Gemini
             with st.spinner("🧠 Generating SQL..."):
-            prompt = f"""
+                prompt = f"""
 You are a data analyst. Generate a BigQuery SQL query for the following question:
 
 Question: {final_question}
@@ -78,26 +75,27 @@ Important:
 - Use _TABLE_SUFFIX to query between dates.
 - Return only SQL, no explanation.
 """
-            response = model.generate_content(prompt)
-            raw_sql = response.text
+                response = model.generate_content(prompt)
+                raw_sql = response.text
 
-        # Extract SQL only (remove "SQL:", markdown, explanation, etc.)
-        sql_lines = raw_sql.splitlines()
-        sql_only = "\n".join(line for line in sql_lines if not line.strip().lower().startswith(("sql", "--", "#", "explanation")) and line.strip() != "")
-        sql_clean = re.sub(r"^```sql|```$", "", sql_only).strip()
+                # Extract SQL
+                sql_lines = raw_sql.splitlines()
+                sql_only = "\n".join(line for line in sql_lines if not line.strip().lower().startswith(("sql", "--", "#", "explanation")) and line.strip())
+                sql_clean = re.sub(r"^```sql|```$", "", sql_only).strip()
 
-        # Run SQL
+            # Run SQL
             with st.spinner("📡 Querying BigQuery..."):
                 df = client.query(sql_clean).to_dataframe()
                 st.dataframe(df)
 
-        # Get Insights
+            # Generate insights
             with st.spinner("📊 Generating insights..."):
                 insight_prompt = f"Give a brief summary and insight on this table:\n{df.head(10).to_csv(index=False)}"
                 insight = model.generate_content(insight_prompt)
                 st.markdown("### 📌 AI-Powered Insights")
                 st.markdown(insight.text)
-        
+
+            # Generate chart
             with st.spinner("📈 Generating chart..."):
                 chart_prompt = f"""
 You are a Streamlit expert. Based on the following table, generate Python code to render the most suitable chart using Streamlit (preferably with Altair or st.bar_chart).
@@ -109,18 +107,16 @@ Requirements:
 - Assume df.head(10) looks like this:
 {df.head(10).to_csv(index=False)}
 """
-            chart_response = model.generate_content(chart_prompt)
-            chart_code = chart_response.text.strip()
+                chart_response = model.generate_content(chart_prompt)
+                chart_code = chart_response.text.strip()
 
-            chart_code = re.sub(r"^```(?:python)?", "", chart_code, flags=re.IGNORECASE).strip()
-            chart_code = re.sub(r"```$", "", chart_code).strip()
-            chart_code = chart_code.replace("python", "").strip()
+                chart_code = re.sub(r"^```(?:python)?", "", chart_code, flags=re.IGNORECASE).strip()
+                chart_code = re.sub(r"```$", "", chart_code).strip()
 
-            # Try to execute chart code
-            try:
-                exec(chart_code)
-            except Exception as chart_error:
-                st.error(f"⚠️ Error running chart code: {chart_error}")
+                try:
+                    exec(chart_code)
+                except Exception as chart_error:
+                    st.error(f"⚠️ Error running chart code: {chart_error}")
 
     except Exception as e:
         st.error(f"❌ Error: {e}")
